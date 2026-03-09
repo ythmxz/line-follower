@@ -24,14 +24,16 @@ while not Button.CENTER in ev3.buttons.pressed():
     if color_sensor.color() == Color.BLACK:
         motor_left.run(speed)
         motor_right.run(speed // 4)
-        ev3.screen.print("RIGHT")
+        ev3.screen.print("RIGHT,", end=" ")
 
     else:
         motor_left.run(speed // 4)
         motor_right.run(speed)
-        ev3.screen.print("LEFT")
+        ev3.screen.print("LEFT,", end=" ")
 
+    ev3.screen.print("(", motor_left.speed(), ", ", motor_right.speed(), ")")
     wait(10)
+    ev3.screen.clear()
 
 motor_left.stop()
 motor_right.stop()
