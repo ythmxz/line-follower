@@ -18,15 +18,15 @@ motor_left = Motor(Port.B)
 motor_right = Motor(Port.C)
 color_sensor = ColorSensor(Port.S1)
 
-SPEED: float = 200.0
+SPEED = 200.0
 
 # Write your program here.
 while not ev3.buttons.pressed():
     if color_sensor.color() == Color.BLACK:
         motor_left.run(SPEED)
-        motor_right.run(SPEED * 0.2)
+        motor_right.run(SPEED * 0.5)
     else:
-        motor_left.run(SPEED * 0.2)
+        motor_left.run(SPEED * 0.5)
         motor_right.run(SPEED)
 
     wait(10)
