@@ -23,7 +23,6 @@ data = DataLog(
 	"Oscilação",
 	"Suavidade",
 	name="on_off",
-	append=True
 	)
 
 watch = StopWatch()
