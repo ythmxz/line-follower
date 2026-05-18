@@ -13,15 +13,15 @@ motor_right = Motor(Port.C)
 color_sensor = ColorSensor(Port.S1)
 
 data = DataLog(
-	"Tempo",
-	"Distância",
-	"Refletância",
-	"Erro",
-	"Velocidade Esq.",
-	"Velocidade Dir.",
-	"Velocidade Média",
+	"Tempo (s)",
+	"Distância (m)",
+	"Refletância (%)",
+	"Erro (%)",
+	"Velocidade Esq. (deg/s)",
+	"Velocidade Dir. (deg/s)",
+	"Velocidade Média (m/s)",
 	"Oscilação",
-	"Suavidade",
+	"Suavidade (deg/s)",
 	name="on_off",
 	)
 
@@ -30,10 +30,11 @@ watch = StopWatch()
 # Variables
 
 # Sensor
-black = 8 									# Calibração do preto (%)
-white = 80 									# Calibração do branco (%)
-sensor_threshold = (black + white) / 2		# Calibração da média (%)
-sensor_value = 0 							# Refletância (%)
+black = 8 									# Calibracao do preto (%)
+white = 80 									# Calibracao do branco (%)
+sensor_threshold = (black + white) / 2		# Calibracao da media (%)
+sensor_hysteresis = 3						# Banda morta para reduzir oscilacao (%)
+sensor_value = 0 							# Refletancia (%)
 sensor_error = 0 							# Erro (%)
 
 # Motor
@@ -44,9 +45,9 @@ speed_correction = 80 						# Valor experimental (deg/s)
 wheel_diameter = 56 						# (mm)
 wheel_circumference = pi * wheel_diameter
 
-# Direção
+# Direcao
 current_direction = None
-last_direction = None
+last_direction = "LEFT"
 
 # Métricas
 distance = 0
@@ -56,6 +57,43 @@ smoothness = 0
 # Velocidades anteriores
 previous_left_speed = 0
 previous_right_speed = 0
+
+def get_direction(reflection_value, threshold, hysteresis, last_direction):
+	if reflection_value < (threshold - hysteresis):
+		return "RIGHT"
+	if reflection_value > (threshold + hysteresis):
+		return "LEFT"
+	return last_direction
+
+
+def apply_on_off(direction, base_speed, correction):
+	if direction == "RIGHT":
+		motor_left.run(base_speed)
+		motor_right.run(base_speed - correction)
+	else:
+		motor_left.run(base_speed - correction)
+		motor_right.run(base_speed)
+
+
+def compute_smoothness(left_speed, right_speed, prev_left, prev_right):
+	delta_left = abs(left_speed - prev_left)
+	delta_right = abs(right_speed - prev_right)
+	return delta_left + delta_right
+
+
+def compute_distance(left_angle, right_angle, circumference):
+	average_angle = (left_angle + right_angle) / 2
+	return (circumference * (average_angle / 360)) / 1000
+
+
+def compute_average_speed(distance, elapsed):
+	if elapsed > 0:
+		return distance / elapsed
+	return 0
+
+
+
+
 
 # Program
 watch.reset()
@@ -67,18 +105,13 @@ while color_sensor.color() != Color.RED:
 	sensor_value = color_sensor.reflection()
 	sensor_error = sensor_value - sensor_threshold
 
-	# Controlador ON/OFF
-	if sensor_value < sensor_threshold:
-		current_direction = "RIGHT"
-
-		motor_left.run(speed_base)
-		motor_right.run(speed_base - speed_correction)
-
-	else:
-		current_direction = "LEFT"
-
-		motor_left.run(speed_base - speed_correction)
-		motor_right.run(speed_base)
+	current_direction = get_direction(
+		sensor_value,
+		sensor_threshold,
+		sensor_hysteresis,
+		last_direction,
+		)
+	apply_on_off(current_direction, speed_base, speed_correction)
 
 	# Oscilação
 	if current_direction != last_direction:
@@ -89,10 +122,12 @@ while color_sensor.color() != Color.RED:
 	current_left_speed = motor_left.speed()
 	current_right_speed = motor_right.speed()
 
-	delta_left = abs(current_left_speed - previous_left_speed)
-	delta_right = abs(current_right_speed - previous_right_speed)
-
-	smoothness = delta_left + delta_right
+	smoothness = compute_smoothness(
+		current_left_speed,
+		current_right_speed,
+		previous_left_speed,
+		previous_right_speed,
+		)
 
 	previous_left_speed = current_left_speed
 	previous_right_speed = current_right_speed
@@ -101,15 +136,13 @@ while color_sensor.color() != Color.RED:
 	left_angle = motor_left.angle()
 	right_angle = motor_right.angle()
 
-	average_angle = (left_angle + right_angle) / 2
-
-	distance = wheel_circumference * (average_angle / 360)
+	distance = compute_distance(left_angle, right_angle, wheel_circumference)
 
 	# Tempo
-	time = watch.time()
+	time = watch.time() / 1000
 
-	# Velocidade Média
-	average_speed = distance / time
+	# Velocidade Media
+	average_speed = compute_average_speed(distance, time)
 
 	# Registro
 	data.log(
