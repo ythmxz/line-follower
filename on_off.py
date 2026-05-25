@@ -12,6 +12,16 @@ motor_left = Motor(Port.B)
 motor_right = Motor(Port.C)
 color_sensor = ColorSensor(Port.S1)
 
+specs = DataLog(
+	"Preto (%)",
+	"Branco (%)",
+	"Limite (%)",
+	"Banda Morta (%)",
+	"Velocidade Base (deg/s)",
+	"Correção (deg/s)",
+	name="logs/on_off/specs/specs",
+)
+
 data = DataLog(
 	"Tempo (s)",
 	"Distância (m)",
@@ -30,16 +40,16 @@ watch = StopWatch()
 # Variables
 
 # Sensor
-black = 7.252604166666667 					# Calibracao do preto (%)
-white = 80.19298245614037 					# Calibracao do branco (%)
+black = 7.022368421052631 					# Calibracao do preto (%)
+white = 78.15824915824916 					# Calibracao do branco (%)
 sensor_threshold = (black + white) / 2		# Calibracao da media (%)
-sensor_hysteresis = 10						# Banda morta para reduzir oscilacao (%)
+sensor_hysteresis = 3						# Banda morta para reduzir oscilacao (%)
 sensor_value = 0 							# Refletancia (%)
 sensor_error = 0 							# Erro (%)
 
 # Motor
-speed_base = 200 							# Valor experimental (deg/s)
-speed_correction = 150						# Valor experimental (deg/s)
+speed_base = 210 							# Valor experimental (deg/s)
+speed_correction = 152						# Valor experimental (deg/s)
 
 # Roda
 wheel_diameter = 56 						# (mm)
@@ -93,13 +103,29 @@ def compute_average_speed(distance, elapsed):
 
 
 # Program
-watch.reset()
-
 motor_left.reset_angle(0)
 motor_right.reset_angle(0)
 
-while color_sensor.color() != Color.RED:
+specs.log(
+	black,
+	white,
+	sensor_threshold,
+	sensor_hysteresis,
+	speed_base,
+	speed_correction
+	)
+
+wait(3000)
+watch.reset()
+
+
+while color_sensor.color() != Color.RED and watch.time() < 45000:
 	sensor_value = color_sensor.reflection()
+
+	if sensor_value is None:
+		wait(10)
+		continue
+
 	sensor_error = sensor_value - sensor_threshold
 
 	current_direction = get_direction(
