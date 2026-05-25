@@ -22,7 +22,7 @@ data = DataLog(
 	"Velocidade Média (m/s)",
 	"Oscilação",
 	"Suavidade (deg/s)",
-	name="on_off",
+	name="logs/on_off/on_off",
 	)
 
 watch = StopWatch()
@@ -30,16 +30,16 @@ watch = StopWatch()
 # Variables
 
 # Sensor
-black = 8 									# Calibracao do preto (%)
-white = 80 									# Calibracao do branco (%)
+black = 7.252604166666667 					# Calibracao do preto (%)
+white = 80.19298245614037 					# Calibracao do branco (%)
 sensor_threshold = (black + white) / 2		# Calibracao da media (%)
-sensor_hysteresis = 3						# Banda morta para reduzir oscilacao (%)
+sensor_hysteresis = 10						# Banda morta para reduzir oscilacao (%)
 sensor_value = 0 							# Refletancia (%)
 sensor_error = 0 							# Erro (%)
 
 # Motor
 speed_base = 200 							# Valor experimental (deg/s)
-speed_correction = 80 						# Valor experimental (deg/s)
+speed_correction = 150						# Valor experimental (deg/s)
 
 # Roda
 wheel_diameter = 56 						# (mm)
@@ -90,9 +90,6 @@ def compute_average_speed(distance, elapsed):
 	if elapsed > 0:
 		return distance / elapsed
 	return 0
-
-
-
 
 
 # Program
@@ -149,7 +146,7 @@ while color_sensor.color() != Color.RED:
 		time,
 		distance,
 		sensor_value,
-		sensor_error,
+		abs(sensor_error),
 		motor_left.speed(),
 		motor_right.speed(),
 		average_speed,

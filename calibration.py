@@ -10,7 +10,7 @@ color_sensor = ColorSensor(Port.S1)
 data = DataLog(
     "Branco",
     "Preto",
-    name="calibration",
+    name="logs/calibration/calibration",
     timestamp=False,
     extension="txt",
 )
