@@ -91,7 +91,7 @@ CONTROLLERS = {
     },
 }
 
-OUTPUT_DIR = ROOT / "logs" / "plots"
+OUTPUT_DIR = ROOT / "plots"
 
 
 def find_test_csvs(controller=None, result=None):
