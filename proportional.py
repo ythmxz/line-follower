@@ -21,7 +21,7 @@ specs = DataLog(
     "Limite (%)",
     "Kp ((deg/s)/%)",
     "Velocidade Base (deg/s)",
-    name="logs/p_control/specs/specs",
+    name="logs/proportional/specs/specs",
 )
 
 data = DataLog(
@@ -35,22 +35,22 @@ data = DataLog(
     "Velocidade Média (m/s)",
     "Oscilação",
     "Suavidade (deg/s)",
-    name="logs/p_control/p_control",
+    name="logs/proportional/proportional",
 )
 
 watch = StopWatch()
 
 # Variables
 # Sensor (escala 0-100, como retornado por color_sensor.reflection())
-black = 7.022368421052631               # Calibração do preto (%)
-white = 78.15824915824916               # Calibração do branco (%)
+black = 75.00053149083179               # Calibração do preto (%)
+white = 7.785390713476784               # Calibração do branco (%)
 sensor_threshold = (black + white) / 2  # Setpoint do controlador (%)
 sensor_value = 0                        # Refletância lida (%)
 sensor_error = 0                        # Erro com sinal (%)
 
 # Controlador P
 speed_base = 210          # Velocidade base (deg/s)
-proportional_gain = 2.14  # Ganho proporcional (deg/s por %)
+proportional_gain = 1.14  # Ganho proporcional (deg/s por %)
                           # proportional_gain opera na escala 0-100: erro(%) × proportional_gain(deg/s por %)
                           # → correção em deg/s. Não se normaliza.
                           # Estimativa inicial: correction_on_off / (2 × erro_max)
