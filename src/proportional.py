@@ -50,7 +50,7 @@ sensor_error = 0                        # Erro com sinal (%)
 
 # Controlador P
 speed_base = 210          # Velocidade base (deg/s)
-proportional_gain = 1.14  # Ganho proporcional (deg/s por %)
+proportional_gain = 2.0   # Ganho proporcional (deg/s por %)
                           # proportional_gain opera na escala 0-100: erro(%) × proportional_gain(deg/s por %)
                           # → correção em deg/s. Não se normaliza.
                           # Estimativa inicial: correction_on_off / (2 × erro_max)
