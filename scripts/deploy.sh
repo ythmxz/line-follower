@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/setup_usb_network.sh"
 
-EV3="robot@10.42.0.3"
+EV3="ev3"
 REMOTE_DIR="/home/robot/line-follower"
 
 setup_usb_network
@@ -14,7 +14,6 @@ SRC_DIR="$(dirname "$SCRIPT_DIR")/src"
 # Resolve os arquivos em src/
 files=()
 if [ "$#" -eq 0 ]; then
-    echo "Nenhum arquivo especificado -- enviando todos os arquivos de src/"
     while IFS= read -r -d '' path; do
         files+=("$path")
     done < <(find "$SRC_DIR" -maxdepth 1 -type f -print0)

@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/setup_usb_network.sh"
 
-EV3="robot@10.42.0.3"
+EV3="ev3"
 REMOTE_DIR="/home/robot/line-follower"
 LOCAL_LOGS="$(dirname "$SCRIPT_DIR")/logs"
 
