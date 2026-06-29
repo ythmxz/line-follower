@@ -6,9 +6,7 @@ source "$SCRIPT_DIR/setup_usb_network.sh"
 
 EV3="ev3"
 REMOTE_DIR="/home/robot/line-follower/logs"
-LOCAL_DIR="logs"
-
-mkdir -p "$LOCAL_DIR"
+LOCAL_DIR="."
 
 setup_usb_network
 

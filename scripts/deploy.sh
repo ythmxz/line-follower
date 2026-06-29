@@ -21,7 +21,7 @@ else
     for arg in "$@"; do
         path="$SRC_DIR/$arg"
         if [ ! -f "$path" ]; then
-            echo "Arquivo nao encontrado: $path"
+            echo "Arquivo não encontrado: $path"
             exit 1
         fi
         files+=("$path")
