@@ -1,20 +1,17 @@
 #!/usr/bin/env pybricks-micropython
 from math import pi
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import (Motor, ColorSensor)
-from pybricks.parameters import (Port, Color)
-from pybricks.tools import (DataLog, StopWatch, wait)
+from pybricks.ev3devices import Motor, ColorSensor
+from pybricks.parameters import Port, Color
+from pybricks.tools import DataLog, StopWatch, wait
 
 # Objects
-ev3 = EV3Brick()
 
+ev3 = EV3Brick()
 motor_left = Motor(Port.B)
 motor_right = Motor(Port.C)
 color_sensor = ColorSensor(Port.S1)
 
-# Os cabeçalhos descrevem as unidades dos valores *após* a conversão no log.
-# Kp não é uma medida em % — é um ganho (deg/s por %) que opera internamente
-# na escala 0-100, por isso seu rótulo deixa isso explícito.
 specs = DataLog(
     "Preto (%)",
     "Branco (%)",
@@ -28,8 +25,8 @@ data = DataLog(
     "Tempo (s)",
     "Distância (m)",
     "Refletância (%)",
-    "Erro (%)",           # Com sinal: positivo = branco, negativo = preto
-    "Correção (deg/s)",     # Kp × erro — útil para analisar o controlador
+    "Erro (%)",
+    "Correção (deg/s)",
     "Velocidade Esq. (deg/s)",
     "Velocidade Dir. (deg/s)",
     "Velocidade Média (m/s)",
@@ -40,167 +37,202 @@ data = DataLog(
 
 watch = StopWatch()
 
-# Variables
-# Sensor (escala 0-100, como retornado por color_sensor.reflection())
-black = 75.00053149083179               # Calibração do preto (%)
-white = 7.785390713476784               # Calibração do branco (%)
-sensor_threshold = (black + white) / 2  # Setpoint do controlador (%)
-sensor_value = 0                        # Refletância lida (%)
-sensor_error = 0                        # Erro com sinal (%)
+#Variables
+
+# Sensor
+WHITE_DEFAULT = 80  # (%)
+BLACK_DEFAULT = 8   # (%)
+sensor_value = 0    # (%)
+sensor_error = 0    # (%)
 
 # Controlador P
-speed_base = 210          # Velocidade base (deg/s)
-proportional_gain = 2.0   # Ganho proporcional (deg/s por %)
-                          # proportional_gain opera na escala 0-100: erro(%) × proportional_gain(deg/s por %)
-                          # → correção em deg/s. Não se normaliza.
-                          # Estimativa inicial: correction_on_off / (2 × erro_max)
-                          # = 152 / (2 × 35.57) ≈ 2.14
+speed_base = 210         # (deg/s)
+proportional_gain = 2.0  # (deg/s por %) — estimativa inicial: correcao_on_off / (2 * erro_max)
 
-# Roda — wheel_diameter em mm, portanto wheel_circumference também em mm.
-# Isso garante que compute_distance() retorne mm, unidade bruta do sistema.
-wheel_diameter = 56                         # (mm)
-wheel_circumference = pi * wheel_diameter   # (mm)
+# Roda
+wheel_diameter = 56                       # (mm)
+wheel_circumference = pi * wheel_diameter # (mm)
 
-# Métricas
-distance = 0    # (mm) — convertido para m apenas no log
+# Estado
+distance = 0  # (mm)
 turns = 0
 smoothness = 0
-last_error_sign = 0     # Rastreia o sinal do erro para detectar oscilações
-
-# Velocidades anteriores (para cálculo de suavidade)
+last_error_sign = 0
 previous_left_speed = 0
 previous_right_speed = 0
 
-def apply_p_control(error, base_speed, proportional_gain):
-    # error em %, proportional_gain em deg/s por % → correction em deg/s. Tudo consistente.
-    # erro > 0 (vendo branco): esq. freia, dir. acelera → vira à esquerda.
-    # erro < 0 (vendo preto):  esq. acelera, dir. freia → vira à direita.
-    # A velocidade média é preservada em base_speed, pois as correções se
-    # aplicam simétricamente e em sentidos opostos nos dois motores.
-    correction = proportional_gain * error
-    left_speed = base_speed - correction
-    right_speed = base_speed + correction
-    motor_left.run(left_speed)
-    motor_right.run(right_speed)
-    return correction   # (deg/s) — retornado para registro no DataLog
+
+def load_calibration(path, default_white, default_black):
+    """Lê branco e preto do arquivo de calibração; retorna os padrões em caso de falha.
+
+    Args:
+        path (str): Caminho para o arquivo de calibração.
+        default_white (float): Valor padrão de branco (%).
+        default_black (float): Valor padrão de preto (%).
+
+    Returns:
+        tuple: (white, black) em %.
+    """
+    try:
+        with open(path) as f:
+            lines = f.readlines()
+
+        values = lines[-1].strip().split(", ")
+
+        return float(values[0]), float(values[1])
+    except Exception:
+        return default_white, default_black
+
+
+def apply_p_control(error, base_speed, gain):
+    """Aplica correção proporcional e aciona os motores.
+
+    Erro positivo (vendo branco): esq. freia, dir. acelera -> vira à esquerda.
+    Erro negativo (vendo preto):  esq. acelera, dir. freia -> vira à direita.
+
+    Args:
+        error (float): Erro do sensor em relação ao setpoint (%).
+        base_speed (float): Velocidade base dos motores (deg/s).
+        gain (float): Ganho proporcional (deg/s por %).
+
+    Returns:
+        float: Correção aplicada (deg/s).
+    """
+    correction = gain * error
+    motor_left.run(base_speed - correction)
+    motor_right.run(base_speed + correction)
+
+    return correction
 
 
 def compute_oscillation(error, last_sign):
-    # Detecta cruzamentos do setpoint (mudanças de sinal do erro).
-    # Equivalente às trocas de direção LEFT/RIGHT do controlador ON/OFF.
+    """Detecta cruzamentos do setpoint pelo sinal do erro.
+
+    Args:
+        error (float): Erro atual do sensor (%).
+        last_sign (int): Sinal do erro na iteração anterior (-1, 0 ou 1).
+
+    Returns:
+        tuple: (evento, sinal_atual) onde evento vale 1 no cruzamento, 0 caso contrário.
+    """
     if error > 0:
         current_sign = 1
     elif error < 0:
         current_sign = -1
     else:
-        # Erro exatamente zero: não define novo lado, mantém o anterior.
         return 0, last_sign
 
     if last_sign != 0 and current_sign != last_sign:
-        return 1, current_sign  # Cruzamento detectado
+        return 1, current_sign
+
     return 0, current_sign
 
 
 def compute_smoothness(left_speed, right_speed, prev_left, prev_right):
-    delta_left = abs(left_speed - prev_left)
-    delta_right = abs(right_speed - prev_right)
-    return delta_left + delta_right
+    """Retorna a soma das variações absolutas de velocidade como métrica de suavidade.
+
+    Args:
+        left_speed (float): Velocidade atual do motor esquerdo (deg/s).
+        right_speed (float): Velocidade atual do motor direito (deg/s).
+        prev_left (float): Velocidade anterior do motor esquerdo (deg/s).
+        prev_right (float): Velocidade anterior do motor direito (deg/s).
+
+    Returns:
+        float: Variação total de velocidade (deg/s).
+    """
+    return abs(left_speed - prev_left) + abs(right_speed - prev_right)
 
 
 def compute_distance(left_angle, right_angle, circumference):
-    # circumference está em mm, portanto o retorno também é mm.
-    # A divisão por 1000 (mm → m) foi movida para o log.
+    """Retorna a distância percorrida com base no ângulo médio das rodas.
+
+    Args:
+        left_angle (float): Ângulo acumulado do motor esquerdo (graus).
+        right_angle (float): Ângulo acumulado do motor direito (graus).
+        circumference (float): Circunferência da roda (mm).
+
+    Returns:
+        float: Distância percorrida (mm).
+    """
     average_angle = (left_angle + right_angle) / 2
-    return circumference * (average_angle / 360)    # (mm)
+
+    return circumference * (average_angle / 360)
 
 
 def compute_average_speed(distance, elapsed):
-    # distance em mm, elapsed em ms.
-    # Coincidência de escala: mm/ms = (10⁻³ m)/(10⁻³ s) = m/s.
-    # O resultado já está em m/s sem nenhuma conversão adicional.
+    """Retorna a velocidade média dados distância em mm e tempo em ms.
+
+    mm/ms == m/s por coincidência de escala: (1e-3 m)/(1e-3 s) = 1 m/s.
+
+    Args:
+        distance (float): Distância percorrida (mm).
+        elapsed (float): Tempo decorrido (ms).
+
+    Returns:
+        float: Velocidade média (m/s).
+    """
     if elapsed > 0:
-        return distance / elapsed   # (m/s)
+        return distance / elapsed
+
     return 0
 
 
-# Program
+white, black = load_calibration("logs/calibration/calibration.txt", WHITE_DEFAULT, BLACK_DEFAULT)
+sensor_threshold = (black + white) / 2
+
 motor_left.reset_angle(0)
 motor_right.reset_angle(0)
 
-# Conversões de apresentação concentradas aqui:
-# valores em % → 0-1 (÷ 100). proportional_gain e speed_base já estão em deg/s.
 specs.log(
-    black / 100,              # % → 0-1
-    white / 100,              # % → 0-1
-    sensor_threshold / 100,   # % → 0-1
-    proportional_gain,        # deg/s por % — ganho do controlador, sem conversão
-    speed_base,               # deg/s — sem conversão
+    black / 100,
+    white / 100,
+    sensor_threshold / 100,
+    proportional_gain,
+    speed_base,
 )
 
 wait(3000)
 watch.reset()
 
-while color_sensor.color() != Color.RED and watch.time() < 45000:
+# Program
+
+while color_sensor.color() != Color.RED and watch.time() < 120000:
     sensor_value = color_sensor.reflection()
 
     if sensor_value is None:
         wait(10)
         continue
 
-    # Erro na escala original (%) para alimentar corretamente apply_p_control(),
-    # que usa proportional_gain calibrado nessa mesma escala (deg/s por %).
     sensor_error = sensor_value - sensor_threshold
-
-    # Aplica o controlador P e captura a correção (deg/s) para o log.
     correction = apply_p_control(sensor_error, speed_base, proportional_gain)
 
-    # Oscilação: conta cruzamentos do setpoint pelo sinal do erro.
     osc_event, last_error_sign = compute_oscillation(sensor_error, last_error_sign)
     turns += osc_event
 
-    # Suavidade
     current_left_speed = motor_left.speed()
     current_right_speed = motor_right.speed()
-
-    smoothness = compute_smoothness(
-        current_left_speed,
-        current_right_speed,
-        previous_left_speed,
-        previous_right_speed,
-    )
-
+    smoothness = compute_smoothness(current_left_speed, current_right_speed, previous_left_speed, previous_right_speed)
     previous_left_speed = current_left_speed
     previous_right_speed = current_right_speed
 
-    # Distância em mm — wheel_circumference está em mm, portanto correto.
     left_angle = motor_left.angle()
     right_angle = motor_right.angle()
     distance = compute_distance(left_angle, right_angle, wheel_circumference)
 
-    # Tempo em ms — unidade bruta do StopWatch. A divisão por 1000 foi
-    # movida para o log.
-    time = watch.time()     # (ms)
-
-    # Velocidade média: distance(mm) / time(ms) = m/s.
+    time = watch.time()
     average_speed = compute_average_speed(distance, time)
 
-    # ---------- Camada de apresentação — todas as conversões aqui ----------
-    # Regra geral:
-    #   ms  → s   (÷ 1000)
-    #   mm  → m   (÷ 1000)
-    #   %   → 0-1 (÷ 100)
-    # Grandezas já em unidades finais (deg/s, m/s, contadores): sem conversão.
     data.log(
-        time / 1000,           # ms  → s
-        distance / 1000,       # mm  → m
-        sensor_value / 100,    # %   → 0-1
-        sensor_error / 100,    # %   → 0-1  (com sinal, diferente do ON/OFF)
-        correction,            # deg/s — sem conversão (Kp[deg/s por %] × erro[%])
-        motor_left.speed(),    # deg/s — sem conversão
-        motor_right.speed(),   # deg/s — sem conversão
-        average_speed / 1000,  # mm/ms → m/s
-        turns,                 # contador — sem conversão
-        smoothness,            # deg/s — sem conversão
+        time / 1000,             # ms  -> s
+        distance / 1000,         # mm  -> m
+        sensor_value / 100,      # %   -> 0-1
+        sensor_error / 100,      # %   -> 0-1
+        correction,
+        motor_left.speed(),
+        motor_right.speed(),
+        average_speed / 1000,    # mm/ms -> m/s
+        turns,
+        smoothness,
     )
 
     wait(10)

@@ -1,12 +1,14 @@
 #!/usr/bin/env pybricks-micropython
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import ColorSensor
-from pybricks.parameters import (Port, Button)
-from pybricks.tools import (DataLog, wait)
+from pybricks.parameters import Port, Button
+from pybricks.tools import DataLog, wait
 
 # Objects
+
 ev3 = EV3Brick()
 color_sensor = ColorSensor(Port.S1)
+
 data = DataLog(
     "Branco",
     "Preto",
@@ -16,32 +18,38 @@ data = DataLog(
 )
 
 # Variables
-sensor_value = 0  # Refletancia (%)
+
+sensor_value = 0  # (%)
 
 
 def wait_for_release():
+    """Bloqueia até o botão central ser solto."""
     while Button.CENTER in ev3.buttons.pressed():
         wait(10)
 
 
 def wait_for_press():
+    """Bloqueia até o botão central ser pressionado."""
     while Button.CENTER not in ev3.buttons.pressed():
         wait(10)
 
 
 def sample_until_press():
+    """Coleta amostras de refletância até o botão central ser pressionado.
+
+    Returns:
+        list: Valores de refletância coletados (%).
+    """
     values = []
-
     while Button.CENTER not in ev3.buttons.pressed():
-        value = color_sensor.reflection()
-        values.append(value)
-
+        values.append(color_sensor.reflection())
         wait(10)
 
     return values
 
 
 # Program
+
 wait_for_release()
 wait_for_press()
 wait_for_release()
