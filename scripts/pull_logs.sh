@@ -6,12 +6,12 @@ source "$SCRIPT_DIR/setup_usb_network.sh"
 
 EV3="ev3"
 REMOTE_DIR="/home/robot/line-follower/logs"
-LOCAL_DIR="."
+LOCAL_DIR="$(dirname "$SCRIPT_DIR")"
 
 setup_usb_network
 
 echo "Baixando logs..."
 
-scp -r "$EV3:$REMOTE_DIR/" "$LOCAL_DIR"
+scp -r "$EV3:$REMOTE_DIR" "$LOCAL_DIR/"
 
 echo "Concluído."
