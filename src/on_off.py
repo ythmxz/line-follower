@@ -1,5 +1,6 @@
 #!/usr/bin/env pybricks-micropython
 from math import pi
+import os
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor, ColorSensor
 from pybricks.parameters import Port, Color
@@ -47,8 +48,8 @@ sensor_value = 0       # (%)
 sensor_error = 0       # (%)
 
 # Motor
-speed_base = 210        # (deg/s)
-speed_correction = 152  # (deg/s)
+speed_base = 200        # (deg/s)
+speed_correction = 165  # (deg/s)
 
 # Roda
 wheel_diameter = 56                       # (mm)
@@ -237,3 +238,4 @@ while color_sensor.color() != Color.RED and watch.time() < 120000:
 
 motor_left.stop()
 motor_right.stop()
+os.sync()
