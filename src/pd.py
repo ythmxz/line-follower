@@ -1,9 +1,11 @@
 #!/usr/bin/env pybricks-micropython
-from math import pi
+
 import os
+from math import pi
+
+from pybricks.ev3devices import ColorSensor, Motor
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor
-from pybricks.parameters import Port, Color
+from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, StopWatch, wait
 
 # Objects
@@ -46,17 +48,17 @@ watch = StopWatch()
 
 # Sensor
 WHITE_DEFAULT = 80  # (%)
-BLACK_DEFAULT = 8   # (%)
-sensor_value = 0    # (%)
-sensor_error = 0    # (%)
+BLACK_DEFAULT = 8  # (%)
+sensor_value = 0  # (%)
+sensor_error = 0  # (%)
 
 # Controlador PD
-speed_base = 150          # (deg/s)
-proportional_gain = 2.3   # Kp: (deg/s) por %
-derivative_gain = 0.05    # Kd: deg por %
+speed_base = 150  # (deg/s)
+proportional_gain = 2.3  # Kp: (deg/s) por %
+derivative_gain = 0.05  # Kd: deg por %
 
 # Roda
-wheel_diameter = 56                        # (mm)
+wheel_diameter = 56  # (mm)
 wheel_circumference = pi * wheel_diameter  # (mm)
 
 # Estado do controlador
@@ -324,17 +326,17 @@ while color_sensor.color() != Color.RED and watch.time() < 120000:
 
     # Registro
     data.log(
-        current_time / 1000,         # ms -> s
-        distance / 1000,             # mm -> m
-        sensor_value / 100,          # % -> 0–1
-        sensor_error / 100,          # % -> 0–1
-        error_derivative,            # %/s
-        proportional_correction,     # deg/s
-        derivative_correction,       # deg/s
-        total_correction,            # deg/s
-        current_left_speed,          # deg/s
-        current_right_speed,         # deg/s
-        average_speed,               # m/s
+        current_time / 1000,  # ms -> s
+        distance / 1000,  # mm -> m
+        sensor_value / 100,  # % -> 0–1
+        sensor_error / 100,  # % -> 0–1
+        error_derivative,  # %/s
+        proportional_correction,  # deg/s
+        derivative_correction,  # deg/s
+        total_correction,  # deg/s
+        current_left_speed,  # deg/s
+        current_right_speed,  # deg/s
+        average_speed,  # m/s
         turns,
         smoothness,
     )

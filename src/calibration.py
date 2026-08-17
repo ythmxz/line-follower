@@ -1,7 +1,8 @@
 #!/usr/bin/env pybricks-micropython
-from pybricks.hubs import EV3Brick
+
 from pybricks.ev3devices import ColorSensor
-from pybricks.parameters import Port, Button
+from pybricks.hubs import EV3Brick
+from pybricks.parameters import Button, Port
 from pybricks.tools import DataLog, wait
 
 # Objects

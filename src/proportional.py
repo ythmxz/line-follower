@@ -1,9 +1,11 @@
 #!/usr/bin/env pybricks-micropython
-from math import pi
+
 import os
+from math import pi
+
+from pybricks.ev3devices import ColorSensor, Motor
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor
-from pybricks.parameters import Port, Color
+from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, StopWatch, wait
 
 # Objects
@@ -38,21 +40,21 @@ data = DataLog(
 
 watch = StopWatch()
 
-#Variables
+# Variables
 
 # Sensor
 WHITE_DEFAULT = 80  # (%)
-BLACK_DEFAULT = 8   # (%)
-sensor_value = 0    # (%)
-sensor_error = 0    # (%)
+BLACK_DEFAULT = 8  # (%)
+sensor_value = 0  # (%)
+sensor_error = 0  # (%)
 
 # Controlador P
-speed_base = 150         # (deg/s)
+speed_base = 150  # (deg/s)
 proportional_gain = 2.3  # (deg/s por %)
 
 # Roda
-wheel_diameter = 56                       # (mm)
-wheel_circumference = pi * wheel_diameter # (mm)
+wheel_diameter = 56  # (mm)
+wheel_circumference = pi * wheel_diameter  # (mm)
 
 # Estado
 distance = 0  # (mm)
@@ -178,7 +180,9 @@ def compute_average_speed(distance, elapsed):
     return 0
 
 
-white, black = load_calibration("logs/calibration/calibration.txt", WHITE_DEFAULT, BLACK_DEFAULT)
+white, black = load_calibration(
+    "logs/calibration/calibration.txt", WHITE_DEFAULT, BLACK_DEFAULT
+)
 sensor_threshold = (black + white) / 2
 
 motor_left.reset_angle(0)
@@ -212,7 +216,12 @@ while color_sensor.color() != Color.RED and watch.time() < 120000:
 
     current_left_speed = motor_left.speed()
     current_right_speed = motor_right.speed()
-    smoothness = compute_smoothness(current_left_speed, current_right_speed, previous_left_speed, previous_right_speed)
+    smoothness = compute_smoothness(
+        current_left_speed,
+        current_right_speed,
+        previous_left_speed,
+        previous_right_speed,
+    )
     previous_left_speed = current_left_speed
     previous_right_speed = current_right_speed
 
@@ -224,14 +233,14 @@ while color_sensor.color() != Color.RED and watch.time() < 120000:
     average_speed = compute_average_speed(distance, time)
 
     data.log(
-        time / 1000,             # ms  -> s
-        distance / 1000,         # mm  -> m
-        sensor_value / 100,      # %   -> 0-1
-        sensor_error / 100,      # %   -> 0-1
+        time / 1000,  # ms  -> s
+        distance / 1000,  # mm  -> m
+        sensor_value / 100,  # %   -> 0-1
+        sensor_error / 100,  # %   -> 0-1
         correction,
         motor_left.speed(),
         motor_right.speed(),
-        average_speed / 1000,    # mm/ms -> m/s
+        average_speed / 1000,  # mm/ms -> m/s
         turns,
         smoothness,
     )
