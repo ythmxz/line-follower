@@ -1,0 +1,27 @@
+{
+  "sensor": {
+    "black_default": 8,
+    "white_default": 80,
+    "calibration_path": "logs/calibration/calibration.txt"
+  },
+  "timers": {
+    "start_delay_ms": 3000,
+    "loop_delay_ms": 10,
+    "max_time_ms": 120000
+  },
+  "on_off": {
+    "base_speed": 200,
+    "correction": 165,
+    "hysteresis": 3
+  },
+  "proportional": {
+    "base_speed": 150,
+    "kp": 2.3
+  },
+  "pid": {
+    "base_speed": 150,
+    "kp": 2.3,
+    "ki": 0.0,
+    "kd": 0.05
+  }
+}
