@@ -11,7 +11,7 @@ _find_usb_iface() {
             return
         fi
     done
-    ip -o link show | awk -F': ' '{print $2}' | awk '{print $1}' | grep -E '^(usb|enx)' | head -1
+    ip -o link show | awk -F': ' '{print $2}' | awk '{print $1}' | grep -E '^(usb|enx|enp.*u)' | head -1
 }
 
 setup_usb_network() {
@@ -54,3 +54,5 @@ setup_usb_network() {
 
     echo "EV3 acessivel em $EV3_IP via $iface"
 }
+
+setup_usb_network
