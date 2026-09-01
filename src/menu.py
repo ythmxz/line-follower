@@ -13,17 +13,14 @@ Public API (intended for main.py):
     run_menu(ev3, color_sensor, config) -> (controller_type, params, white, black)
 """
 
-from pybricks.ev3devices import ColorSensor
-from pybricks.hubs import EV3Brick
-from pybricks.parameters import Button, Port
+import json
+
+from pybricks.parameters import Button
 from pybricks.tools import DataLog, wait
 
 # =====================================================================
 # Constants
 # =====================================================================
-
-ev3 = EV3Brick()
-sensor = ColorSensor(Port.S1)
 
 DEBOUNCE_MS = 200  # ms to wait after a button press to avoid double-reads
 POLL_MS = 20  # polling interval inside wait loops
@@ -221,6 +218,7 @@ def calibration_screen(
         ev3.speaker.beep()
 
         data.log(white, black)
+        del data
 
         ev3.screen.clear()
         ev3.screen.print("Calibrado!")
@@ -408,7 +406,7 @@ def run_menu(ev3, color_sensor, config):
 
     Flow:
         calibration_screen -> controller_screen -> parameters_screen
-        -> start_screen (loops back to controller_screen on cancel)
+        -> start_screen (cancel terminates the program)
 
     Args:
         ev3 (EV3Brick): EV3 brick instance.
@@ -431,18 +429,20 @@ def run_menu(ev3, color_sensor, config):
         config["sensor"]["black_default"],
     )
 
-    while True:
-        # Step 2: Controller selection
-        controller_type = controller_screen(ev3)
+    # Step 2: Controller selection
+    controller_type = controller_screen(ev3)
 
-        # Step 3: Parameter tuning
-        params = parameters_screen(ev3, controller_type, config)
+    # Step 3: Parameter tuning
+    params = parameters_screen(ev3, controller_type, config)
 
-        # Step 4: Start confirmation
-        confirmed = start_screen(ev3, controller_type, params)
+    # Step 4: Start confirmation
+    confirmed = start_screen(ev3, controller_type, params)
 
-        if confirmed:
-            return controller_type, params, white, black
+    if confirmed:
+        config[controller_type] = params
+        with open("config.json", "w") as f:
+            json.dump(config, f)
+        return controller_type, params, white, black
 
-        # Cancelled — terminate the program
-        raise SystemExit
+    # Cancelled — terminate the program
+    raise SystemExit

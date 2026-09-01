@@ -24,35 +24,6 @@ def load_config(path):
         return json.load(f)
 
 
-# --- Calibration ---
-
-
-def load_calibration(path, default_white, default_black):
-    """
-    Reads white and black values from the calibration file.
-
-    Falls back to the provided defaults if the file is missing or invalid.
-
-    Args:
-        path (str): Path to the calibration file.
-        default_white (float): Default white value (%).
-        default_black (float): Default black value (%).
-
-    Returns:
-        tuple: (white, black) in %.
-    """
-    try:
-        with open(path) as f:
-            lines = f.readlines()
-
-        values = lines[-1].strip().split(", ")
-
-        return float(values[0]), float(values[1])
-
-    except Exception:
-        return default_white, default_black
-
-
 # --- Environment Metrics ---
 
 
